@@ -218,8 +218,8 @@ AUTH_USER_MODEL = 'users.User'
 DJOSER = {
     "USER_CREATE_PASSWORD_RETYPE": True,
     "SERIALIZERS": {
-        "user_create": "app.users.serializers.CustomUserCreateSerializer",
-        "user": "app.users.serializers.CustomUserCreateSerializer",
+        'token_create': 'app.users.serializers.CustomTokenCreateSerializer',
+        'user_create': 'app.users.serializers.CustomUserCreateSerializer',
     },
 }
 

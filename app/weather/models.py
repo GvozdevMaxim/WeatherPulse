@@ -36,4 +36,4 @@ class WeatherHistory(models.Model):
         ]
 
     def __str__(self):
-        return
+        return f"{self.city.name} — {self.updated_at.strftime('%Y-%m-%d %H:%M')}"

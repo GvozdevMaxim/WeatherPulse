@@ -57,9 +57,13 @@ class TemperatureChartDataAPI(APIView):
     http_method_names = ['get']
 
     def get(self, request, city_id):
+
         history = (
             WeatherHistory.objects.filter(user=request.user, city_id=city_id).order_by('-updated_at')[:100]
         )
+        print(f"user: {request.user} ({request.user.id}), city_id: {city_id}")
+        print("history.count:", history.count())
+
         data = [
             {
                 'timestamp': entry.updated_at.strftime('%Y-%m-%d %H:%M'),
