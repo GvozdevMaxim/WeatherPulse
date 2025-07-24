@@ -68,3 +68,5 @@ Pipfile.lock
 
 .env.local
 !env.example
+
+celerybeat-schedule*
