@@ -1,0 +1,48 @@
+<!-- templates/weather/chart.html -->
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>График погоды</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <h2>График {{ label }}</h2>
+
+  <form method="get" action="">
+    <label for="metric">Выбрать параметр:</label>
+    <select name="metric" id="metric" onchange="this.form.submit()">
+      <option value="temperature" {% if metric == 'temperature' %}selected{% endif %}>Температура</option>
+      <option value="humidity" {% if metric == 'humidity' %}selected{% endif %}>Влажность</option>
+    </select>
+  </form>
+
+  <canvas id="weatherChart" style="max-width: 800px; margin-top: 30px;"></canvas>
+
+  <script>
+    const ctx = document.getElementById('weatherChart').getContext('2d');
+    const chart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: {{ labels|safe }},
+        datasets: [
+          {
+            label: '{{ label }}',
+            data: {{ data|safe }},
+            borderColor: '{{ color }}',
+            fill: false
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        scales: {
+          y: {
+            beginAtZero: false
+          }
+        }
+      }
+    });
+  </script>
+</body>
+</html>

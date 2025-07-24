@@ -1,0 +1,58 @@
+version: '3.9'
+
+services:
+  web:
+    build: .
+    container_name: django_app
+    command: gunicorn WeatherPulse.wsgi:application --bind 0.0.0.0:8000
+    volumes:
+      - .:/app
+    ports:
+      - "8000:8000"
+    depends_on:
+      - redis
+      - db
+    env_file:
+      - .env
+
+  redis:
+    image: redis:7
+    container_name: redis
+
+  db:
+    image: postgres:15
+    container_name: postgres
+    restart: always
+    environment:
+      POSTGRES_DB: weatherdb
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  celery:
+    build: .
+    container_name: celery_worker
+    command: celery -A WeatherPulse worker --loglevel=info
+    volumes:
+      - .:/app
+    depends_on:
+      - redis
+      - db
+    env_file:
+      - .env
+
+  celery-beat:
+    build: .
+    container_name: celery_beat
+    command: celery -A WeatherPulse beat --loglevel=info
+    volumes:
+      - .:/app
+    depends_on:
+      - redis
+      - web
+    env_file:
+      - .env
+
+volumes:
+  postgres_data:
