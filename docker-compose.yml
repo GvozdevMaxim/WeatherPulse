@@ -7,6 +7,7 @@ services:
     command: gunicorn WeatherPulse.wsgi:application --bind 0.0.0.0:8000
     volumes:
       - .:/app
+      - static_volume:/app/staticfiles
     ports:
       - "8000:8000"
     depends_on:
@@ -14,7 +15,6 @@ services:
       - db
     env_file:
       - .env
-
   redis:
     image: redis:7
     container_name: redis
@@ -24,9 +24,9 @@ services:
     container_name: postgres
     restart: always
     environment:
-      POSTGRES_DB: weatherdb
-      POSTGRES_USER: user
-      POSTGRES_PASSWORD: password
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
@@ -56,3 +56,4 @@ services:
 
 volumes:
   postgres_data:
+  static_volume:

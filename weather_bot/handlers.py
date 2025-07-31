@@ -6,9 +6,9 @@ from asgiref.sync import sync_to_async
 from app.subscriptions.models import UserSubscription
 from app.weather.models import WeatherHistory
 
-
 logger = logging.getLogger(__name__)
 User = get_user_model()
+
 
 async def weather_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     tg_user_id = update.effective_user.id
@@ -18,15 +18,15 @@ async def weather_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     except User.DoesNotExist:
         await update.message.reply_text("Вы не привязаны к системе. Обратитесь к администратору.")
         return
-    except Exception as e:
-        logger.error(f"Ошибка при получении пользователя: {e}")
+    except Exception:
+        logger.error("Ошибка при получении пользователя по telegram_id %s", tg_user_id, exc_info=True)
         await update.message.reply_text("Произошла ошибка при поиске вашего профиля. Попробуйте позже.")
         return
 
     try:
         subs = await sync_to_async(list)(UserSubscription.objects.filter(user=user))
-    except Exception as e:
-        logger.error(f"Ошибка при получении подписок пользователя {user.id}: {e}")
+    except Exception:
+        logger.error("Ошибка при получении подписок пользователя %s", user.id, exc_info=True)
         await update.message.reply_text("Не удалось получить ваши подписки. Попробуйте позже.")
         return
 
@@ -52,13 +52,15 @@ async def weather_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 f"Облачность: {last_weather.cloudiness}%\n"
                 f"Обновлено: {last_weather.updated_at.strftime('%Y-%m-%d %H:%M')}"
             )
-        except Exception as e:
-            logger.error(f"Ошибка при обработке подписки для пользователя {user.id}, города {sub.city_id}: {e}")
-            await update.message.reply_text(f"Не удалось получить данные по городу {sub.city.name}.")
-
+        except Exception:
+            logger.error(
+                "Ошибка при обработке подписки пользователя %s, города %s",
+                user.id, sub.city_id, exc_info=True
+            )
+            await update.message.reply_text(
+                f"Не удалось получить данные по городу {getattr(sub.city, 'name', 'неизвестному')}.")
 
     if messages:
         await update.message.reply_text("\n\n".join(messages))
     else:
         await update.message.reply_text("Нет данных о погоде.")
-

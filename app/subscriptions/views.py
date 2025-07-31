@@ -5,15 +5,23 @@ from .serializers import UserSubscriptionSerializer
 from app.weather.utils import fetch_weather_data
 
 
-
 class UserSubscriptionViewSet(viewsets.ModelViewSet):
-    """Вывод списка подписок"""
     queryset = UserSubscription.objects.all()
     serializer_class = UserSubscriptionSerializer
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        return self.queryset.filter(user=self.request.user)
+        # При генерации swagger документации возвращаем пустой queryset
+        if getattr(self, 'swagger_fake_view', False):
+            return self.queryset.none()
+
+        user = self.request.user
+        # Если пользователь анонимный, тоже возвращаем пустой queryset,
+        # чтобы не вызывать ошибку в фильтре
+        if user.is_anonymous:
+            return self.queryset.none()
+
+        return self.queryset.filter(user=user)
 
     def perform_create(self, serializer):
         city = serializer.validated_data['city']

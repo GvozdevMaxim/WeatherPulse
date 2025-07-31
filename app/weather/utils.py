@@ -1,3 +1,4 @@
+import logging
 import requests
 from rest_framework.exceptions import ValidationError
 from .serializers import WeatherSerializer
@@ -5,9 +6,10 @@ from urllib.parse import urlencode, urljoin
 from django.conf import settings
 from .exceptions import WeatherServiceUnavailable
 
+logger = logging.getLogger('myapp')
 
 def fetch_weather_data(city_name):
-    """обращается к api OpenWeatherMap и сохраняет данные о погоде в момент подписки пользователя на определенный город"""
+    """Обращается к API OpenWeatherMap и сохраняет данные о погоде в момент подписки пользователя на город."""
     base_url = settings.OPENWEATHERMAP_API_URL
     path = f"/data/{settings.OPENWEATHERMAP_API_VERSION}/weather"
     full_path = urljoin(base_url, path)
@@ -18,14 +20,24 @@ def fetch_weather_data(city_name):
         'units': 'metric',
     }
     url = f"{full_path}?{urlencode(params)}"
-    response = requests.get(url, timeout=5)
 
-    if response.status_code != 200:
-        raise WeatherServiceUnavailable(f"Error OpenWeatherMap: {response.status_code}")
+    logger.info(f"Запрос погоды для города '{city_name}' к URL: {url}")
 
-    data = response.json()
+    try:
+        response = requests.get(url, timeout=5)
+        response.raise_for_status()
+    except requests.exceptions.RequestException as e:
+        logger.error(f"Ошибка запроса к OpenWeatherMap для города '{city_name}': {e}", exc_info=True)
+        raise WeatherServiceUnavailable(f"Error OpenWeatherMap: {e}")
+
+    try:
+        data = response.json()
+    except ValueError as e:
+        logger.error(f"Ошибка парсинга JSON от OpenWeatherMap для города '{city_name}': {e}", exc_info=True)
+        raise WeatherServiceUnavailable("Service returned invalid JSON")
 
     if 'main' not in data:
+        logger.error(f"В ответе OpenWeatherMap отсутствует ключ 'main' для города '{city_name}': {data}")
         raise WeatherServiceUnavailable("Service unavailable")
 
     weather_data = {
@@ -39,8 +51,8 @@ def fetch_weather_data(city_name):
 
     serializer = WeatherSerializer(data=weather_data)
     if serializer.is_valid():
+        logger.debug(f"Успешная сериализация данных погоды для города '{city_name}': {serializer.validated_data}")
         return serializer.validated_data
     else:
+        logger.error(f"Ошибка сериализации данных погоды для города '{city_name}': {serializer.errors}")
         raise ValidationError(serializer.errors)
-
-

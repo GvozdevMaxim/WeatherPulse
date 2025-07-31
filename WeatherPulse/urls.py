@@ -3,6 +3,8 @@ from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from app.weather.views import CityViewSet
 from app.subscriptions.views import UserSubscriptionViewSet
+from django.conf import settings
+from django.conf.urls.static import static
 from .yasg import urlpatterns as doc_urls  # документация Swagger/OpenAPI
 
 router = DefaultRouter()
@@ -21,3 +23,5 @@ urlpatterns = [
 ]
 
 urlpatterns += doc_urls
+if settings.DEBUG:
+    urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

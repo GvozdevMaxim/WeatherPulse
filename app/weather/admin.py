@@ -1,16 +1,15 @@
-from django.contrib import admin
 from .models import City, WeatherHistory
-
-
+from unfold.admin import ModelAdmin
+from django.contrib import  admin
 @admin.register(City)
-class CityAdmin(admin.ModelAdmin):
+class CityAdmin(ModelAdmin):
     list_display = ('name', 'country')
     search_fields = ('name', 'country')
     ordering = ('name', 'country')
 
 
 @admin.register(WeatherHistory)
-class WeatherHistoryAdmin(admin.ModelAdmin):
+class WeatherHistoryAdmin(ModelAdmin):
     list_display = (
         'user',
         'city',

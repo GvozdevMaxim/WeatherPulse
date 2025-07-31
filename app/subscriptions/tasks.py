@@ -1,9 +1,13 @@
+import smtplib
+
 from celery import shared_task
+import logging
 from .models import UserSubscription
 from app.weather.models import WeatherHistory
 from ..weather.utils import fetch_weather_data
 from django.core.mail import send_mail
 
+logger = logging.getLogger("myapp")
 
 @shared_task(name="app.subscriptions.tasks.update_weather_data")
 def update_weather_data():
@@ -41,7 +45,7 @@ def check_weather_threshold(subscription_id):
     try:
         sub = UserSubscription.objects.select_related('user', 'city').get(id=subscription_id)
     except UserSubscription.DoesNotExist:
-        print(f"⚠ Подписка {subscription_id} не найдена")
+        logger.error(f"Подписка {subscription_id} не найдена")
         return
 
     email_data = []
@@ -50,6 +54,7 @@ def check_weather_threshold(subscription_id):
         try:
             return float(value)
         except (TypeError, ValueError):
+            logger.error(f"Невозможно привести к числу типа float {value!r}", exc_info=True)
             return None
 
     temp = safe_float(sub.temperature)
@@ -76,20 +81,25 @@ def check_weather_threshold(subscription_id):
     if email_data and not sub.notified:
         subject = f"⚠Погода в {sub.city.name} превысила установленные пороги"
         message = "Обнаружены следующие превышения:\n\n" + "\n".join(email_data)
+        try:
+            send_mail(
+                subject,
+                message,
+                'noreply@weatherpulse.com',
+                [sub.user.email],
+                fail_silently=False,
+            )
+        except smtplib.SMTPException as e:
+            logger.error(f"Ошибка SMTP: {e}", exc_info=True)
+        except Exception as e:
+            logger.error(f"Непредвиденная ошибка при отправке письма: {e}", exc_info=True)
 
-        send_mail(
-            subject,
-            message,
-            'noreply@weatherpulse.com',
-            [sub.user.email],
-            fail_silently=False,
-        )
 
-        print(f"Уведомление отправлено {sub.user.email} для {sub.city.name}")
+        logger.info(f"Уведомление отправлено {sub.user.email} для {sub.city.name}")
         sub.notified = True
         sub.save()
 
     if not email_data and sub.notified:
         sub.notified = False
         sub.save()
-        print(f" Сброс уведомления для {sub.user.email}")
+        logger.info(f" Сброс уведомления для {sub.user.email}")

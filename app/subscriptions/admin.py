@@ -1,9 +1,11 @@
 from django.contrib import admin
+from unfold.admin import ModelAdmin
+
 from .models import UserSubscription
 
 
 @admin.register(UserSubscription)
-class UserSubscriptionAdmin(admin.ModelAdmin):
+class UserSubscriptionAdmin(ModelAdmin):
     list_display = (
         'user',
         'city',
